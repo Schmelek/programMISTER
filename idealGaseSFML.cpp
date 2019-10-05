@@ -60,6 +60,7 @@ void drawBall(Ball ball)
 
     for (ball.radius > 0; ball.radius += -1;)
     {
+        sf::CircleShape shape((*ball).radius);
         txSetColor(RGB(ball.R - ball.R*0.7*ball.radius/k, ball.G - ball.G*0.7*ball.radius/k, ball.B - ball.B*0.7*ball.radius/k));
         txSetFillColor(RGB(ball.R - ball.R*0.7*ball.radius/k, ball.G - ball.G*0.7*ball.radius/k, ball.B - ball.B*0.7*ball.radius/k));
         txCircle(ball.position.x, ball.position.y, ball.radius);
@@ -96,7 +97,7 @@ void bumpBall(Ball* ball1, Ball* ball2)
 
 int main()
 {
-    txCreateWindow(1000, 1000);
+    sf::RenderWindow window(sf::VideoMode(200, 200), "idealGase");
     Ball* balls = new Ball[50];
 
     for(int k = 0; k < 50; k++)
