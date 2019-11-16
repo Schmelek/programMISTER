@@ -8,6 +8,7 @@
 #include <ctime>
 
 
+const float dt = 0.001;
 
 struct Ball
 {
@@ -16,16 +17,67 @@ struct Ball
 
     float radius = 25;
 
-    float R = 100;
+    float R = 255;
     float G = 0;
     float B = 0;
 
-    float dt  = 0.1;
+
+    Ball(vector2f position, vector2f velocity, float radius, int R, int G, int B); //new consctructor 
+    Ball();
+
+    void draw(sf::RenderWindow* window)
+    {
+        sf::CircleShape shape(this->radius);
+
+        for(int i = this->radius;i > 0; i = i - 2)
+        {
+            int currentRed = this->R - this->R*0.85*i/this->radius;
+            int currentGreen = this->G - this->G*0.85*i/this->radius;
+            int currentBlue = this->B - this->B*0.85*i/this->radius;
+
+            shape.setRadius(i);
+            shape.setFillColor(sf::Color(currentRed, currentGreen, currentBlue));
+            shape.setPosition(this->position.x - i, this->position.y - i);
+            window->draw(shape);
+        }
+
+    }
+
+    void move(float dt)
+    {
+        if ( this->position.y > (1000 - this->radius) or this->position.y < this->radius)
+            this->velocity.y = -this->velocity.y;
+        if ( this->position.x > (1000 - this->radius) or this->position.x < this->radius)
+            this->velocity.x = -this->velocity.x;
+
+        this->position.x += this->velocity.x * dt;
+        this->position.y += this->velocity.y * dt;
+    }
+     
 };
+
+
+
+
+Ball::Ball(vector2f position, vector2f velocity, float radius, int R, int G, int B) 
+{
+    this->position = position;
+    this->velocity = velocity;
+    this->radius = radius;
+    this->R = R;
+    this->G = G;
+    this->B = B;
+}
+
+Ball::Ball()
+{
+}
+
+
 
 void resistBall(Ball* ball)
 {
-    (*ball).velocity = mul((*ball).velocity, exp(-0.008*(*ball).dt ));
+    (*ball).velocity = mul((*ball).velocity, exp(-0.008*dt ));
 }
 
 
@@ -39,23 +91,43 @@ void antiBallsticker(Ball* ball1, Ball* ball2)
     vector2f Oy;
     Oy.x = 0;
     Oy.y = 1;
-    (*ball1).position.x = (*ball2).position.x + ((*ball1).radius +(*ball2).radius)*scalarmul(normalize(sub(tmp1, tmp1)), Ox);
-    (*ball1).position.y = (*ball2).position.y + ((*ball1).radius +(*ball2).radius)*scalarmul(normalize(sub(tmp1, tmp2)), Oy);
+    (*ball1).position.x = tmp2.x + ((*ball1).radius +(*ball2).radius)*scalarmul(normalize(sub(tmp1, tmp2)), Ox);
+    (*ball1).position.y = tmp2.y + ((*ball1).radius +(*ball2).radius)*scalarmul(normalize(sub(tmp1, tmp2)), Oy);
 }
 
+void antiWallsticker(Ball* ball)
+{
+    srand(time(NULL));
+    if ((*ball).position.x > 1000 - (*ball).radius or (*ball).position.x < (*ball).radius)
+    {     
+        (*ball).position.x = (*ball).radius + rand() % 1000 - (*ball).radius; 
+        (*ball).position.y = (*ball).radius + rand() % 1000 - (*ball).radius;
+    }
+
+    if ((*ball).position.y > 1000 - (*ball).radius or (*ball).position.y < (*ball).radius)
+    {
+        (*ball).position.x = (*ball).radius + rand() % 1000 - (*ball).radius; 
+        (*ball).position.y = (*ball).radius + rand() % 1000 - (*ball).radius;    
+    }
+
+
+}
 
 void moveBall(Ball* ball)
 {
-    if ((*ball).velocity.x > 1000 - (*ball).radius or (*ball).velocity.y < (*ball).radius)
-        (*ball).velocity.y = - (*ball).velocity.y;
-    if ((*ball).velocity.x > 1000 - (*ball).radius or (*ball).velocity.x < (*ball).radius)
+    if ((*ball).position.x > 1000 - (*ball).radius or (*ball).position.x < (*ball).radius)
         (*ball).velocity.x = - (*ball).velocity.x;
+    if ((*ball).position.y > 1000 - (*ball).radius or (*ball).position.y < (*ball).radius)
+        (*ball).velocity.y = - (*ball).velocity.y;
 
     resistBall(ball);
+    //antiWallsticker(ball);
 
-    (*ball).position = sub((*ball).velocity, mul((*ball).velocity, (*ball).dt));
+    (*ball).position = mul((*ball).velocity, dt);
 
 }
+
+
 
 
 void drawBall(Ball ball, sf::RenderWindow* window)
@@ -86,7 +158,7 @@ void bumpBall(Ball* ball1, Ball* ball2)
         antiBallsticker(ball1, ball2);
 
     if (len((*ball1).position, (*ball2).position) <= (*ball1).radius + (*ball2).radius)
-        {
+    {
         vector2f tmpposition = normalize(sub((*ball2).position, (*ball1).position));
         vector2f Ox;
         Ox.x = 1;
@@ -94,15 +166,16 @@ void bumpBall(Ball* ball1, Ball* ball2)
         vector2f Oy;
         Oy.x = 0;
         Oy.y = 1;
+        vector2f v1 = (*ball1).velocity;
+        vector2f v2 = (*ball2).velocity;
         float centralmassvelocity = (pow((*ball1).radius, 3)*scalarmul((*ball1).velocity, tmpposition) + pow((*ball2).radius, 3)*scalarmul((*ball2).velocity, tmpposition))/(pow((*ball1).radius, 3) + pow((*ball2).radius, 3));
 
-        (*ball1).velocity.x = scalarmul((*ball1).velocity, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Ox) + (2*centralmassvelocity - scalarmul((*ball1).velocity, tmpposition))*scalarmul(tmpposition, Ox);
-        (*ball1).velocity.y = scalarmul((*ball1).velocity, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Oy) + (2*centralmassvelocity - scalarmul((*ball1).velocity, tmpposition))*scalarmul(tmpposition, Oy);
-        (*ball2).velocity.x = scalarmul((*ball2).velocity, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Ox) + (2*centralmassvelocity - scalarmul((*ball2).velocity, tmpposition))*scalarmul(tmpposition, Ox);
-        (*ball2).velocity.y = scalarmul((*ball2).velocity, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Oy) + (2*centralmassvelocity - scalarmul((*ball2).velocity, tmpposition))*scalarmul(tmpposition, Oy);
+        (*ball1).velocity.x = scalarmul(v1, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Ox) + (2*centralmassvelocity - scalarmul(v1, tmpposition))*scalarmul(tmpposition, Ox);
+        (*ball1).velocity.y = scalarmul(v1, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Oy) + (2*centralmassvelocity - scalarmul(v1, tmpposition))*scalarmul(tmpposition, Oy);
+        (*ball2).velocity.x = scalarmul(v2, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Ox) + (2*centralmassvelocity - scalarmul(v2, tmpposition))*scalarmul(tmpposition, Ox);
+        (*ball2).velocity.y = scalarmul(v2, perpendicular(tmpposition))*scalarmul(perpendicular(tmpposition), Oy) + (2*centralmassvelocity - scalarmul(v2, tmpposition))*scalarmul(tmpposition, Oy);
 
-        
-        }
+    }
 }
 
 
@@ -111,10 +184,10 @@ void createBalls(Ball* balls, int ballsQuantity)
     srand(time(NULL));
     for(int i = 0; i < ballsQuantity; i++)
     {
-        balls[i].position.x = rand() % 100;
-        balls[i].position.y = rand() % 100;
-        balls[i].velocity.x = rand() % 150;
-        balls[i].velocity.y = rand() % 150;
+        balls[i].position.x = rand() % (1000 - 100) + 65;
+        balls[i].position.y = rand() % (1000 - 100) + 65;
+        balls[i].velocity.x = rand() % 100;
+        balls[i].velocity.y = rand() % 100;
     } 
 }
 
@@ -132,7 +205,7 @@ void bumpAllballs(Ball* balls, int ballsQuantity)
 void moveAllballs(Ball* balls, int ballsQuantity)
 {
     for(int i = 0; i < ballsQuantity; i++)
-        moveBall(&balls[i]);
+        balls[i].move(dt);
 }
 
 
@@ -140,7 +213,7 @@ void moveAllballs(Ball* balls, int ballsQuantity)
 void drawAllballs(Ball* balls, int ballsQuantity, sf::RenderWindow* window)
 {
     for(int i = 0; i < ballsQuantity; i++)
-        drawBall(balls[i], &window);
+        balls[i].draw(window);
 }
 
 
@@ -179,5 +252,4 @@ int main()
 
     return 0;
 }
-
 
