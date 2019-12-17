@@ -90,21 +90,7 @@ class List
             this->size --;    
     }
 
-    void pop_back()
-    {
-        /*Node* tmp = (*this).operator[this->size - 1];//how can we get straight to the tail using operator []?
-        (*this).operator[this->size - 2]->next = nullptr;
-        delete tmp;
-        this->size--;*/
-        
-
-            Node* beforetail = this->head;
-            for (int i = 1; i < this->size; i++)
-                beforetail = beforetail->next;
-            delete beforetail->next;
-            beforetail->next = nullptr;
-            this->size --; 
-    }
+   
     
     void clear()
     {
@@ -161,6 +147,11 @@ class List
         else
             std:: cout << "Impossible to delete a node with such index \n";    
         
+    }
+    
+    void pop_back()
+    {
+        this->remove(this->size - 1);
     }
 
 };
